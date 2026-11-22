@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Install — lapis</title>
+  <meta name="description" content="Unlock the Yoga Tab Plus and install Linux, either beside Android or on the userdata partition.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="bar">
+    <a class="mark" href="index.html">lapis</a>
+    <nav>
+      <a href="guide.html" aria-current="page">Install</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/linux-lapis">Kernel</a>
+      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis-pkgs">Packages</a>
+    </nav>
+  </header>
+  <main id="content">
+    <p class="kicker">Install</p>
+    <h1>Unlock, then pick where the root filesystem goes.</h1>
+    <p class="lede">Both paths flash the same UEFI, EFI, and kernel images to slot B. Multiboot keeps a shrunk Android data partition and adds one named <code>arch</code>. The other path writes Linux over <code>userdata</code> and does not edit the partition table.</p>
+    <div class="choices">
+      <a class="choice" href="#multiboot">
+        <span class="choice-kicker">Path A</span>
+        <strong>Multiboot</strong>
+        <span>TWRP, then a new arch partition, then flash.</span>
+      </a>
+      <a class="choice" href="#userdata">
+        <span class="choice-kicker">Path B</span>
+        <strong>Whole userdata</strong>
+        <span>No repartition. The root image replaces Android’s data.</span>
+      </a>
+    </div>
+
+    <h2 id="warnings">Before either path</h2>
+    <div class="warn">
+      <p>Unlocking the bootloader erases Android’s data. Copy your files off the tablet first.</p>
+      <p>Linux is flashed to <code>boot_b</code>. Leave <code>boot_a</code> alone if you still want Android’s boot image.</p>
+      <p><code>pstoredump</code> and <code>lenovocust</code> are shared, not A/B. The EFI and kernel images replace them.</p>
+      <p>Do not flash <code>xbl</code>, <code>abl</code>, <code>vbmeta</code>, <code>persist</code>, <code>fsg</code>, <code>modemst1</code>, or <code>modemst2</code>.</p>
+      <p>The UFS logical sector size is 4096 bytes. <code>sgdisk</code> on this disk counts in those sectors.</p>
+    </div>
+
+    <h2 id="unlock">Unlock the bootloader</h2>
+    <ol class="steps">
+      <li>
+        <p>On ZUI, open Settings, About tablet, and tap Software version until developer options turn on. In General settings, Developer options, turn OEM unlocking on. The tablet needs Wi-Fi for that switch.</p>
+      </li>
+      <li>
+        <p>Reboot to fastboot and read the 8-character serial printed on the screen.</p>
+        <pre><code>adb reboot bootloader
+fastboot devices
+fastboot getvar serialno</code></pre>
+      </li>
+      <li>
+        <p>Request <code>sn.img</code> from Lenovo’s tablet unlock portal with that serial. The file is signed for one device. This site does not host it. When you have the file:</p>
+        <pre><code>fastboot flash unlock sn.img
+fastboot flashing unlock</code></pre>
+        <p>Confirm on the tablet with the volume keys and the power button. If this bootloader rejects <code>flashing unlock</code>, use <code>fastboot oem unlock-go</code>.</p>
+      </li>
+      <li>
+        <p>Let ZUI boot once so it can recreate <code>userdata</code>. Then continue with path A or path B.</p>
+      </li>
+    </ol>
+
+    <h2 id="multiboot">Path A — multiboot from TWRP</h2>
+    <p>This keeps Android’s data on a smaller <code>userdata</code> and adds partition 17, named <code>arch</code>, for the Linux root. The repartition is done from a TWRP shell on <code>recovery_b</code>. This site does not host a TWRP image.</p>
+    <p>TWRP’s own toolbox does not provide <code>sgdisk</code>. The carve used for this port runs a real <code>sgdisk</code> and <code>mkfs.ext4</code> (an Alpine aarch64 build unpacked where the recovery can execute it). Check <code>sgdisk --version</code> before you delete any partition.</p>
+    <ol class="steps">
+      <li>
+        <p>Boot TWRP. On this tablet the disk node used for the carve is <code>/dev/sda</code>. If that path is missing, use <code>/dev/block/sda</code>. Back up the GPT, then print partition 16 and write down its start and end.</p>
+        <pre><code>sgdisk --backup=/tmp/sda-gpt.bak /dev/sda
+sgdisk -i 16 /dev/sda
+sgdisk -p /dev/sda</code></pre>
+        <p>Copy <code>/tmp/sda-gpt.bak</code> off the tablet before you continue. A backup that stays in <code>/tmp</code> dies with the recovery session.</p>
+      </li>
+      <li>
+        <p>Compute the cut in 4096-byte sectors. 100 GiB is 26214400 sectors. The start of <code>userdata</code> stays where it is.</p>
+        <pre><code>new_userdata_end = old_end - 26214400
+arch_start       = new_userdata_end + 1
+arch_end         = old_end</code></pre>
+        <p>Stop if those numbers are not inside the current userdata range, or if fewer than about 32 GiB would remain for Android. A disk with a different userdata range needs its own arithmetic. Pasting another tablet’s sectors here will delete the wrong span.</p>
+        <div class="example">
+          <p>Worked example from the tablet this port was brought up on. These numbers matched that disk only. userdata was <code>5972392..60884986</code>. After a 100 GiB cut, userdata became <code>5972392:34670586</code> and <code>arch</code> became <code>34670587:60884986</code>.</p>
+        </div>
+      </li>
+      <li>
+        <p>Rewrite partition 16 and create partition 17. Substitute your own start, end, and arch range. The type code <code>8300</code> is a Linux filesystem.</p>
+        <pre><code>sgdisk \
+  -d 16 \
+  -n 16:USERDATA_START:NEW_USERDATA_END -c 16:userdata \
+  -n 17:ARCH_START:ARCH_END -c 17:arch -t 17:8300 \
+  /dev/sda
+sgdisk -p /dev/sda</code></pre>
+        <p>Ask the kernel to reread the table (<code>blockdev --rereadpt /dev/sda</code>) and confirm the new <code>arch</code> node exists. You do not format it by hand when the next step flashes a filesystem image over it.</p>
+      </li>
+      <li>
+        <p>Reboot to fastboot and flash the four images from the image build. <code>flash.sh</code> in that build runs this same sequence and asks you to type <code>yes</code>.</p>
+        <pre><code>fastboot devices
+fastboot flash boot_b silicium.img
+fastboot flash pstoredump endeavouros_esp.raw
+fastboot flash lenovocust endeavouros_boot.raw
+fastboot flash arch endeavouros_rootfs.raw
+fastboot set_active b
+fastboot reboot</code></pre>
+      </li>
+    </ol>
+    <p>Android’s boot image is still on slot A. <code>fastboot set_active a</code>, or <code>qbootctl -s a</code> from Linux, selects it.</p>
+
+    <h2 id="userdata">Path B — the whole userdata partition</h2>
+    <p>Skip TWRP and skip the partition edit. The root image is written to the existing <code>userdata</code> partition. That destroys Android’s data. The partition’s GPT name can stay <code>userdata</code>. The filesystem inside the image is labeled <code>eos-lapis</code>, which is the label GRUB boots.</p>
+    <div class="warn">
+      <p><code>flash-multiboot.sh</code> asks for the root partition name and, if you answer <code>userdata</code>, asks you to type <code>userdata</code> again before it writes.</p>
+    </div>
+    <pre><code>fastboot devices
+fastboot flash boot_b silicium.img
+fastboot flash pstoredump endeavouros_esp.raw
+fastboot flash lenovocust endeavouros_boot.raw
+fastboot flash userdata endeavouros_rootfs.raw
+fastboot set_active b
+fastboot reboot</code></pre>
+    <p>The root image has to be smaller than the userdata partition. The image builder sizes that file to the installed system, so it fits. Slot A’s boot image is still there, and Android no longer has its data partition.</p>
+
+    <h2 id="first-boot">First boot</h2>
+    <p>Silicium opens on its menu with Internal Storage highlighted. A short press of the power button is Enter and continues the boot. A long press resets.</p>
+    <p>GNOME runs its initial setup. The root password is <code>root</code>. The hostname is <code>lapis</code>. Over USB, the tablet is at <code>172.16.42.1</code>.</p>
+  </main>
+  <footer>
+    <span>lapis · Lenovo Yoga Tab Plus</span>
+    <span><a href="hardware.html">Hardware</a></span>
+  </footer>
+</body>
+</html>

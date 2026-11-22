@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hardware — lapis</title>
+  <meta name="description" content="Boot path and partition map for the Lenovo Yoga Tab Plus Linux port.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="bar">
+    <a class="mark" href="index.html">lapis</a>
+    <nav>
+      <a href="guide.html">Install</a>
+      <a href="hardware.html" aria-current="page">Hardware</a>
+      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/linux-lapis">Kernel</a>
+      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis-pkgs">Packages</a>
+    </nav>
+  </header>
+  <main id="content">
+    <p class="kicker">TB520FU · codename lapis</p>
+    <h1>What the port actually boots.</h1>
+    <p class="lede">Silicium starts from slot B, GRUB loads the kernel and the board device tree from the boot filesystem, and the root is an ext4 volume labeled <code>eos-lapis</code>. There is no initramfs.</p>
+
+    <h2>Boot path</h2>
+    <ol>
+      <li>The bootloader on <code>boot_b</code> is a Mu-Silicium RELEASE image.</li>
+      <li>Silicium reads the EFI system partition on <code>pstoredump</code>. That volume is FAT16 with 4096-byte sectors. GRUB is <code>EFI/BOOT/BOOTAA64.EFI</code>.</li>
+      <li>GRUB loads <code>/Image</code> and <code>/dtbs/qcom/sm8650-lenovo-tb520fu.dtb</code> from <code>lenovocust</code>, the ext4 filesystem labeled <code>boot</code>.</li>
+      <li>The kernel command line is <code>root=LABEL=eos-lapis rw rootwait console=tty0 clk_ignore_unused pd_ignore_unused regulator_ignore_unused ignore_loglevel</code>.</li>
+    </ol>
+    <p>Slot A keeps the Android boot image. From Linux, <code>qbootctl -s a</code> and a reboot select it. From fastboot, <code>fastboot set_active a</code> does the same. <code>pstoredump</code> and <code>lenovocust</code> are shared by both slots. The Linux images replace whatever those two partitions held.</p>
+
+    <h2>Partitions the flasher writes</h2>
+    <table>
+      <thead>
+        <tr><th>Image</th><th>Partition</th><th>Role</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>silicium.img</code></td><td><code>boot_b</code></td><td>UEFI, 96 MB slot</td></tr>
+        <tr><td><code>endeavouros_esp.raw</code></td><td><code>pstoredump</code></td><td>128 MB EFI system partition</td></tr>
+        <tr><td><code>endeavouros_boot.raw</code></td><td><code>lenovocust</code></td><td>Kernel, device tree, GRUB config</td></tr>
+        <tr><td><code>endeavouros_rootfs.raw</code></td><td><code>arch</code> or <code>userdata</code></td><td>EndeavourOS root</td></tr>
+      </tbody>
+    </table>
+    <p><code>flash.sh</code> writes the root image to <code>arch</code> and leaves <code>boot_a</code> and <code>userdata</code> alone. <code>flash-multiboot.sh</code> asks for the boot slot and the root partition name. This guide uses <code>boot_b</code> in both install paths.</p>
+
+    <h2>On the machine</h2>
+    <ul>
+      <li>The panel is the Tianma NT36532, dual-DSI, 2944×1840.</li>
+      <li>Wi-Fi is WCN7850. Plugged into a host, the tablet’s USB network is <code>usb0</code> at <code>172.16.42.1/24</code>.</li>
+      <li>The rear camera is a GC13A0 and the front camera is a GC13A2.</li>
+      <li>Six AW88461 amplifiers drive the speakers. The sound card name stays <code>Lenovo-TB520FU</code>.</li>
+      <li>The pogo keyboard and touchpad are used while the keyboard is attached. The lid blanks the screen. It does not suspend.</li>
+      <li>Sensors come from the ADSP through hexagonrpc. Proximity is quiet while the tablet is idle. The compass has nothing to read.</li>
+    </ul>
+    <p>The device tree, the firmware directory <code>qcom/sm8650/lenovo/tb520fu</code>, and the pen-charger module keep the product name TB520FU. That is the name the kernel and the firmware files use. The port’s own name is lapis.</p>
+  </main>
+  <footer>
+    <span>lapis · Lenovo Yoga Tab Plus</span>
+    <span><a href="guide.html">Install guide</a></span>
+  </footer>
+</body>
+</html>

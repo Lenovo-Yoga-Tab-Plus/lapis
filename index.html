@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>lapis — Linux on the Lenovo Yoga Tab Plus</title>
+  <meta name="description" content="Mainline Linux and EndeavourOS for the Lenovo Yoga Tab Plus (TB520FU), codename lapis.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="bar">
+    <a class="mark" href="index.html">lapis</a>
+    <nav>
+      <a href="guide.html">Install</a>
+      <a href="hardware.html">Hardware</a>
+      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/linux-lapis">Kernel</a>
+      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis-pkgs">Packages</a>
+    </nav>
+  </header>
+  <main id="content">
+    <p class="kicker">Lenovo Yoga Tab Plus · TB520FU</p>
+    <h1>Mainline Linux on the tablet, with Android still in the other slot.</h1>
+    <p class="lede">Mu-Silicium UEFI, GRUB, and an EndeavourOS root. The kernel is linux-lapis. The device packages are lapis-pkgs.</p>
+    <div class="choices">
+      <a class="choice" href="guide.html#multiboot">
+        <span class="choice-kicker">Keep Android</span>
+        <strong>Multiboot</strong>
+        <span>Carve a Linux partition from userdata in TWRP, then flash slot B.</span>
+      </a>
+      <a class="choice" href="guide.html#userdata">
+        <span class="choice-kicker">Replace Android data</span>
+        <strong>Whole userdata</strong>
+        <span>Leave the partition table alone and put the root filesystem on userdata.</span>
+      </a>
+    </div>
+    <dl class="specs">
+      <div>
+        <dt>SoC</dt>
+        <dd>Snapdragon 8 Gen 3<br>SM8650P</dd>
+      </div>
+      <div>
+        <dt>Panel</dt>
+        <dd>Tianma NT36532<br>2944 × 1840</dd>
+      </div>
+      <div>
+        <dt>Boot</dt>
+        <dd>Silicium on boot_b<br>GRUB, no initramfs</dd>
+      </div>
+      <div>
+        <dt>Root</dt>
+        <dd>EndeavourOS<br>label eos-lapis</dd>
+      </div>
+    </dl>
+    <section class="split">
+      <div>
+        <h2>In use</h2>
+        <ul>
+          <li>The Tianma panel, touch, and the pen</li>
+          <li>Wi-Fi</li>
+          <li>USB networking at 172.16.42.1</li>
+          <li>Rear and front cameras</li>
+          <li>The six speakers</li>
+          <li>The pogo keyboard and its touchpad</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Not available</h2>
+        <ul>
+          <li>The compass. The ADSP firmware on this tablet has no magnetometer.</li>
+        </ul>
+        <p><a href="hardware.html">Partition map and boot path</a></p>
+        <p>The image zip is built by the endeavouros-lapis image builder. This site does not host a release download yet. A build produces <code>silicium.img</code>, the EFI image, the boot image, and the root filesystem.</p>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <span>lapis · Lenovo Yoga Tab Plus</span>
+    <span><a href="guide.html">Install guide</a></span>
+  </footer>
+</body>
+</html>
