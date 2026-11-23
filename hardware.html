@@ -54,9 +54,12 @@
       <li>The rear camera is a GC13A0 and the front camera is a GC13A2.</li>
       <li>Six AW88461 amplifiers drive the speakers. The sound card name stays <code>Lenovo-TB520FU</code>.</li>
       <li>The pogo keyboard and touchpad are used while the keyboard is attached. The lid blanks the screen. It does not suspend.</li>
-      <li>Sensors come from the ADSP through hexagonrpc. Proximity is quiet while the tablet is idle. The compass has nothing to read.</li>
+      <li>Sensors come from the ADSP through hexagonrpc.</li>
     </ul>
-    <p>The device tree, the firmware directory <code>qcom/sm8650/lenovo/tb520fu</code>, and the pen-charger module keep the product name TB520FU. That is the name the kernel and the firmware files use. The port’s own name is lapis.</p>
+
+    <h2>Status</h2>
+    <p>The panel, touch, pen, and folio cover work. Wi-Fi, Bluetooth, and the USB network work. Both cameras work. The speakers, the internal microphones, and the light sensor work. Closing the folio blanks the screen and does not suspend.</p>
+    <p>The accelerometer does not report an orientation. The proximity sensor does not send a reading. The compass is not enabled. The headset microphone is configured and has not been tested. A very short sound right after boot can clip. Suspend does not stay down while the tablet is plugged into a computer. After that wake the light sensor has stuck at a dark reading.</p>
   </main>
   <footer>
     <span>lapis · Lenovo Yoga Tab Plus</span>
