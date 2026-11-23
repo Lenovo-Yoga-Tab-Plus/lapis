@@ -7,28 +7,27 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy to Pages
+  build:
+    name: Build site
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
       - name: Stage site
         run: |
-          mkdir -p _site
-          cp index.html guide.html hardware.html favicon.svg _site/
-          cp -a css _site/css
+          mkdir -p _site/css _site/js
+          cp index.html guide.html hardware.html favicon.svg icons.svg unlock-bootloader.py _site/
+          cp -a css/. _site/css/
+          cp -a js/. _site/js/
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
@@ -37,6 +36,17 @@ jobs:
         with:
           path: _site
 
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

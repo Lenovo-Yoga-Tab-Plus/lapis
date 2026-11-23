@@ -4,34 +4,53 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hardware — lapis</title>
-  <meta name="description" content="Boot path and partition map for the Lenovo Yoga Tab Plus Linux port.">
+  <meta name="description" content="Boot path, partition map, and device status for the Lenovo Yoga Tab Plus Linux port.">
+  <meta name="theme-color" content="#12110f">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
+  <script>
+    try {
+      var saved = localStorage.getItem("lapis-theme");
+      var theme = saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.dataset.theme = theme;
+    } catch (error) {
+      document.documentElement.dataset.theme = "dark";
+    }
+  </script>
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
   <header class="bar">
     <a class="mark" href="index.html">lapis</a>
-    <nav>
-      <a href="guide.html">Install</a>
-      <a href="hardware.html" aria-current="page">Hardware</a>
-      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/linux-lapis">Kernel</a>
-      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis-pkgs">Packages</a>
-    </nav>
+    <div class="bar-tools">
+      <nav>
+        <a href="guide.html">Install</a>
+        <a href="hardware.html" aria-current="page">Hardware</a>
+        <a href="https://github.com/Lenovo-Yoga-Tab-Plus/linux-lapis">Kernel</a>
+        <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis-pkgs">Packages</a>
+      </nav>
+      <button class="theme" id="theme-toggle" type="button" aria-pressed="true">
+        <svg class="icon when-dark" aria-hidden="true"><use href="icons.svg#sun"></use></svg>
+        <svg class="icon when-light" aria-hidden="true"><use href="icons.svg#moon"></use></svg>
+        <span class="when-dark">Light</span>
+        <span class="when-light">Dark</span>
+      </button>
+    </div>
   </header>
   <main id="content">
     <p class="kicker">TB520FU · codename lapis</p>
     <h1>What the port actually boots.</h1>
-    <p class="lede">Silicium starts from slot B, GRUB loads the kernel and the board device tree from the boot filesystem, and the root is an ext4 volume labeled <code>eos-lapis</code>. There is no initramfs.</p>
+    <p class="lede">Silicium starts from slot A. GRUB loads the kernel and the board device tree from the boot filesystem. The root is an ext4 volume labeled <code>eos-lapis</code>. There is no initramfs. Slot B keeps the Android boot image.</p>
 
     <h2>Boot path</h2>
     <ol>
-      <li>The bootloader on <code>boot_b</code> is a Mu-Silicium RELEASE image.</li>
+      <li>The bootloader on <code>boot_a</code> is a Mu-Silicium RELEASE image. <code>dtbo_a</code> is erased so the Android overlay is not applied. <code>vbmeta_a</code> is the stock image with verity and verification disabled.</li>
       <li>Silicium reads the EFI system partition on <code>pstoredump</code>. That volume is FAT16 with 4096-byte sectors. GRUB is <code>EFI/BOOT/BOOTAA64.EFI</code>.</li>
       <li>GRUB loads <code>/Image</code> and <code>/dtbs/qcom/sm8650-lenovo-tb520fu.dtb</code> from <code>lenovocust</code>, the ext4 filesystem labeled <code>boot</code>.</li>
-      <li>The kernel command line is <code>root=LABEL=eos-lapis rw rootwait console=tty0 clk_ignore_unused pd_ignore_unused regulator_ignore_unused ignore_loglevel</code>.</li>
+      <li>The kernel command line from the current image builder is <code>root=LABEL=eos-lapis rw rootwait console=tty0 quiet splash</code>.</li>
     </ol>
-    <p>Slot A keeps the Android boot image. From Linux, <code>qbootctl -s a</code> and a reboot select it. From fastboot, <code>fastboot set_active a</code> does the same. <code>pstoredump</code> and <code>lenovocust</code> are shared by both slots. The Linux images replace whatever those two partitions held.</p>
+    <p><code>pstoredump</code> and <code>lenovocust</code> are shared by both slots. The Linux images replace whatever those two partitions held. <code>boot_b</code>, <code>dtbo_b</code>, and the signed <code>vbmeta_b</code> stay as Android left them.</p>
+    <p>From Linux, <code>qbootctl -s b</code> and a reboot select Android. From fastboot, <code>fastboot set_active b</code> does the same and clears the successful flag. After a Linux boot, the image runs <code>qbootctl -m</code> and marks the booted slot successful.</p>
 
     <h2>Partitions the flasher writes</h2>
     <table>
@@ -39,31 +58,71 @@
         <tr><th>Image</th><th>Partition</th><th>Role</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>silicium.img</code></td><td><code>boot_b</code></td><td>UEFI, 96 MB slot</td></tr>
+        <tr><td><code>silicium.img</code></td><td><code>boot_a</code></td><td>UEFI, 96 MB slot</td></tr>
         <tr><td><code>endeavouros_esp.raw</code></td><td><code>pstoredump</code></td><td>128 MB EFI system partition</td></tr>
         <tr><td><code>endeavouros_boot.raw</code></td><td><code>lenovocust</code></td><td>Kernel, device tree, GRUB config</td></tr>
-        <tr><td><code>endeavouros_rootfs.raw</code></td><td><code>arch</code> or <code>userdata</code></td><td>EndeavourOS root</td></tr>
+        <tr><td><code>endeavouros_rootfs.raw</code></td><td><code>arch</code></td><td>EndeavourOS root, label eos-lapis</td></tr>
       </tbody>
     </table>
-    <p><code>flash.sh</code> writes the root image to <code>arch</code> and leaves <code>boot_a</code> and <code>userdata</code> alone. <code>flash-multiboot.sh</code> asks for the boot slot and the root partition name. This guide uses <code>boot_b</code> in both install paths.</p>
+    <p><code>flash.sh</code> writes those four partitions and leaves slot B and userdata alone. The install guide also erases <code>dtbo_a</code> and writes the disabled-verity flags to <code>vbmeta_a</code>. Those two are not in <code>flash.sh</code>.</p>
 
-    <h2>On the machine</h2>
-    <ul>
-      <li>The panel is the Tianma NT36532, dual-DSI, 2944×1840.</li>
-      <li>Wi-Fi is WCN7850. Plugged into a host, the tablet’s USB network is <code>usb0</code> at <code>172.16.42.1/24</code>.</li>
-      <li>The rear camera is a GC13A0 and the front camera is a GC13A2.</li>
-      <li>Six AW88461 amplifiers drive the speakers. The sound card name stays <code>Lenovo-TB520FU</code>.</li>
-      <li>The pogo keyboard and touchpad are used while the keyboard is attached. The lid blanks the screen. It does not suspend.</li>
-      <li>Sensors come from the ADSP through hexagonrpc.</li>
-    </ul>
+    <h2>Devices</h2>
+    <div class="grid">
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#cpu"></use></svg>
+        <strong>SM8650P</strong>
+        <p>Snapdragon 8 Gen 3. The device tree is <code>sm8650-lenovo-tb520fu</code>.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#display"></use></svg>
+        <strong>Tianma NT36532</strong>
+        <p>Dual-DSI, 2944×1840. Touch and the pen are on the same panel.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#wifi"></use></svg>
+        <strong>WCN7850</strong>
+        <p>Wi-Fi and Bluetooth. The factory addresses come from persist.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#camera"></use></svg>
+        <strong>Cameras</strong>
+        <p>Rear GC13A0. Front GC13A2.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#speaker"></use></svg>
+        <strong>Lenovo-TB520FU</strong>
+        <p>Six AW88461 amplifiers. The card name, UCM, and topology stay <code>Lenovo-TB520FU</code>.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#pen"></use></svg>
+        <strong>Pen and folio</strong>
+        <p>The pen module is <code>lenovo_tb520fu_pen</code>. Closing the folio blanks the screen.</p>
+      </article>
+    </div>
 
     <h2>Status</h2>
-    <p>The panel, touch, pen, and folio cover work. Wi-Fi, Bluetooth, and the USB network work. Both cameras work. The speakers, the internal microphones, and the light sensor work. Closing the folio blanks the screen and does not suspend.</p>
-    <p>The accelerometer does not report an orientation. The proximity sensor does not send a reading. The compass is not enabled. The headset microphone is configured and has not been tested. A very short sound right after boot can clip. Suspend does not stay down while the tablet is plugged into a computer. After that wake the light sensor has stuck at a dark reading.</p>
+    <table>
+      <thead>
+        <tr><th>Device</th><th>State</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Panel, touch, pen, keyboard, clickpad</td><td>Working</td></tr>
+        <tr><td>Folio</td><td>Blanks the screen. Does not suspend.</td></tr>
+        <tr><td>Wi-Fi, Bluetooth, USB network</td><td>Working. Bluetooth is restored after wake.</td></tr>
+        <tr><td>Cameras, speakers, internal microphones, light sensor</td><td>Working</td></tr>
+        <tr><td>Orientation</td><td>Taken from the accelerometer</td></tr>
+        <tr><td>Suspend</td><td>Stays down, including with USB unplugged. Wake is the power key.</td></tr>
+        <tr><td>Proximity</td><td>No reading</td></tr>
+        <tr><td>Compass</td><td>Not present in this tablet’s ADSP firmware</td></tr>
+        <tr><td>Headset microphone</td><td>Configured. Not tested with a plug.</td></tr>
+        <tr><td>Speaker start</td><td>A very short clip can still happen at the start of playback.</td></tr>
+      </tbody>
+    </table>
   </main>
   <footer>
     <span>lapis · Lenovo Yoga Tab Plus</span>
     <span><a href="guide.html">Install guide</a></span>
   </footer>
+  <script src="js/site.js"></script>
 </body>
 </html>

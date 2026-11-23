@@ -4,37 +4,66 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>lapis — Linux on the Lenovo Yoga Tab Plus</title>
-  <meta name="description" content="Mainline Linux and EndeavourOS for the Lenovo Yoga Tab Plus (TB520FU), codename lapis.">
+  <meta name="description" content="Mainline Linux and EndeavourOS for the Lenovo Yoga Tab Plus (TB520FU), codename lapis. Linux stays on slot A.">
+  <meta name="theme-color" content="#12110f">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
+  <script>
+    try {
+      var saved = localStorage.getItem("lapis-theme");
+      var theme = saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.dataset.theme = theme;
+    } catch (error) {
+      document.documentElement.dataset.theme = "dark";
+    }
+  </script>
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
   <header class="bar">
     <a class="mark" href="index.html">lapis</a>
-    <nav>
-      <a href="guide.html">Install</a>
-      <a href="hardware.html">Hardware</a>
-      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/linux-lapis">Kernel</a>
-      <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis-pkgs">Packages</a>
-    </nav>
+    <div class="bar-tools">
+      <nav>
+        <a href="guide.html">Install</a>
+        <a href="hardware.html">Hardware</a>
+        <a href="https://github.com/Lenovo-Yoga-Tab-Plus/linux-lapis">Kernel</a>
+        <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis-pkgs">Packages</a>
+      </nav>
+      <button class="theme" id="theme-toggle" type="button" aria-pressed="true">
+        <svg class="icon when-dark" aria-hidden="true"><use href="icons.svg#sun"></use></svg>
+        <svg class="icon when-light" aria-hidden="true"><use href="icons.svg#moon"></use></svg>
+        <span class="when-dark">Light</span>
+        <span class="when-light">Dark</span>
+      </button>
+    </div>
   </header>
   <main id="content">
     <p class="kicker">Lenovo Yoga Tab Plus · TB520FU</p>
-    <h1>Mainline Linux on the tablet, with Android still in the other slot.</h1>
-    <p class="lede">Mu-Silicium UEFI, GRUB, and an EndeavourOS root. The kernel is linux-lapis. The device packages are lapis-pkgs.</p>
+    <h1>Linux on slot A. Android stays on slot B.</h1>
+    <p class="lede">Mu-Silicium UEFI, GRUB, and an EndeavourOS root. The kernel is linux-lapis. The device packages are lapis-pkgs. The bootloader unlock image is built on your computer from the tablet’s serial.</p>
+    <div class="actions">
+      <a class="button" href="guide.html">Install guide</a>
+      <a class="button ghost" href="hardware.html">Hardware</a>
+    </div>
+
     <div class="choices">
-      <a class="choice" href="guide.html#multiboot">
-        <span class="choice-kicker">Keep Android</span>
-        <strong>Multiboot</strong>
-        <span>Carve a Linux partition from userdata in TWRP, then flash slot B.</span>
+      <a class="choice" href="guide.html#unlock">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#unlock"></use></svg>
+        <strong>Unlock</strong>
+        <span><code>unlock-bootloader.py</code> writes <code>sn.img</code> for the fastboot serial. Unlocking erases Android’s data.</span>
       </a>
-      <a class="choice" href="guide.html#userdata">
-        <span class="choice-kicker">Replace Android data</span>
-        <strong>Whole userdata</strong>
-        <span>Leave the partition table alone and put the root filesystem on userdata.</span>
+      <a class="choice" href="guide.html#partition">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#layers"></use></svg>
+        <strong>Partition</strong>
+        <span>From TWRP, shrink userdata and add a Linux partition named <code>arch</code>. The numbers belong to that disk.</span>
+      </a>
+      <a class="choice" href="guide.html#flash">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#flash"></use></svg>
+        <strong>Flash slot A</strong>
+        <span>UEFI, EFI, kernel, and the root image. Slot B, userdata, and the signed vbmeta stay untouched.</span>
       </a>
     </div>
+
     <dl class="specs">
       <div>
         <dt>SoC</dt>
@@ -46,38 +75,75 @@
       </div>
       <div>
         <dt>Boot</dt>
-        <dd>Silicium on boot_b<br>GRUB, no initramfs</dd>
+        <dd>Silicium on boot_a<br>GRUB, no initramfs</dd>
       </div>
       <div>
         <dt>Root</dt>
         <dd>EndeavourOS<br>label eos-lapis</dd>
       </div>
     </dl>
-    <section class="split">
-      <div>
-        <h2>In use</h2>
+
+    <h2>On the tablet</h2>
+    <div class="grid">
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#display"></use></svg>
+        <strong>Display and pen</strong>
+        <p>The Tianma panel, touch, and the pen. The folio blanks the screen. It does not suspend.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#keyboard"></use></svg>
+        <strong>Pogo keyboard</strong>
+        <p>Keys and the clickpad work while the cover is attached.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#wifi"></use></svg>
+        <strong>Wi-Fi and Bluetooth</strong>
+        <p>WCN7850. Bluetooth is unbound across suspend and comes back with the factory address.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#usb"></use></svg>
+        <strong>USB network</strong>
+        <p>Plugged into a host, the tablet is <code>172.16.42.1</code>.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#camera"></use></svg>
+        <strong>Cameras</strong>
+        <p>Rear GC13A0 and front GC13A2.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" aria-hidden="true"><use href="icons.svg#speaker"></use></svg>
+        <strong>Six speakers</strong>
+        <p>The sound card name stays <code>Lenovo-TB520FU</code>. Internal microphones work.</p>
+      </article>
+    </div>
+
+    <div class="split">
+      <section class="panel">
+        <h2>Working</h2>
         <ul>
-          <li>The Tianma panel, touch, and the pen</li>
-          <li>Wi-Fi</li>
-          <li>USB networking at 172.16.42.1</li>
-          <li>Rear and front cameras</li>
-          <li>The six speakers</li>
-          <li>The pogo keyboard and its touchpad</li>
+          <li>Panel, touch, pen, and folio blanking</li>
+          <li>Keyboard, clickpad, Wi-Fi, Bluetooth, and USB</li>
+          <li>Both cameras, the speakers, and the internal microphones</li>
+          <li>Light sensor and orientation from the accelerometer</li>
+          <li>Suspend, including with the USB cable unplugged</li>
         </ul>
-      </div>
-      <div>
-        <h2>Not available</h2>
+      </section>
+      <section class="panel">
+        <h2>Still open</h2>
         <ul>
-          <li>The compass. The ADSP firmware on this tablet has no magnetometer.</li>
+          <li>The compass. This tablet’s ADSP firmware has no magnetometer.</li>
+          <li>The proximity sensor does not produce a reading.</li>
+          <li>The headset microphone is configured and has not been tested with a plug.</li>
+          <li>A very short sound at the start of playback can clip.</li>
         </ul>
-        <p><a href="hardware.html">Partition map and boot path</a></p>
-        <p>The image zip is built by the endeavouros-lapis image builder. This site does not host a release download yet. A build produces <code>silicium.img</code>, the EFI image, the boot image, and the root filesystem.</p>
-      </div>
-    </section>
+        <p><a href="hardware.html">Boot path and partition map</a></p>
+      </section>
+    </div>
   </main>
   <footer>
     <span>lapis · Lenovo Yoga Tab Plus</span>
-    <span><a href="guide.html">Install guide</a></span>
+    <span><a href="guide.html">Install</a> · <a href="https://github.com/Lenovo-Yoga-Tab-Plus/lapis">Source</a></span>
   </footer>
+  <script src="js/site.js"></script>
 </body>
 </html>
