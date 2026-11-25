@@ -119,12 +119,13 @@ fastboot --disable-verity --disable-verification flash vbmeta_a vbmeta_stock.img
     <p>Read the current slot. If it already prints <code>a</code>, leave it. If it prints <code>b</code>, switch once:</p>
     <pre><code>fastboot getvar current-slot
 fastboot set_active a</code></pre>
-    <p>That switch clears the successful flag. The image marks slot A successful with <code>qbootctl -m</code> after the first Linux boot. Do not run <code>set_active</code> again.</p>
+    <p>That switch clears the successful flag. The image marks slot A successful after the first Linux boot.</p>
 
     <h2 id="first-boot">First boot</h2>
     <p>Wait until the Silicium menu is on screen and Internal Storage is highlighted. A short press of the power button is Enter and continues the boot. A long press resets. From GRUB, a long press returns to fastboot.</p>
     <p>The image locks the root password and does not create a desktop user. SSH accepts the public key the builder installed for root. Over USB the tablet is <code>172.16.42.1</code>. The hostname is <code>lapis</code>. Add your own user after that login.</p>
-    <p>Android’s boot image is still on slot B. From Linux, <code>qbootctl -s b</code> and a reboot select it. From fastboot, <code>fastboot set_active b</code> does the same, and it clears the successful flag on the way.</p>
+    <p>Android’s boot image is still on slot B. Select it from fastboot with <code>fastboot set_active b</code>, and come back with <code>fastboot set_active a</code>. Each switch clears the successful flag.</p>
+    <p class="note">Do not switch slots from Linux. <code>qbootctl -s</code> moves the active flag without the partition type GUIDs. The bootloader then refuses every boot and the tablet stays in fastboot until the partition table is repaired over EDL.</p>
   </main>
   <footer>
     <span>lapis · Lenovo Yoga Tab Plus</span>

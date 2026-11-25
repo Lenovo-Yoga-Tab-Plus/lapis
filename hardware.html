@@ -50,7 +50,7 @@
       <li>The kernel command line from the current image builder is <code>root=LABEL=eos-lapis rw rootwait console=tty0 quiet splash</code>.</li>
     </ol>
     <p><code>pstoredump</code> and <code>lenovocust</code> are shared by both slots. The Linux images replace whatever those two partitions held. <code>boot_b</code>, <code>dtbo_b</code>, and the signed <code>vbmeta_b</code> stay as Android left them.</p>
-    <p>From Linux, <code>qbootctl -s b</code> and a reboot select Android. From fastboot, <code>fastboot set_active b</code> does the same and clears the successful flag. After a Linux boot, the image runs <code>qbootctl -m</code> and marks the booted slot successful.</p>
+    <p><code>fastboot set_active b</code> selects Android and <code>fastboot set_active a</code> selects Linux. Each switch clears the successful flag, and after a Linux boot the image marks the booted slot successful. Slots are not switched from Linux. <code>qbootctl -s</code> moves the active flag without the partition type GUIDs, and the bootloader then refuses every boot and stays in fastboot.</p>
 
     <h2>Partitions the flasher writes</h2>
     <table>
